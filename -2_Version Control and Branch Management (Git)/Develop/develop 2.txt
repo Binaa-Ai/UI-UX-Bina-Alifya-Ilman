@@ -1,0 +1,76 @@
+function copyDriveWithPermissions(){
+      var originFolder = DriveApp.getFolderById("XXX-XXX");
+      var destinationFolder = DriveApp.getFolderById("XXX-XXX");
+      var currentFolder = destinationFolder;
+      var totalCount = traverseFolder(originFolder,0, currentFolder);
+}
+
+function traverseFolder(folder,total, currentFolder) {
+
+  
+  var name = folder.getName();
+  var count = 0;
+  var files = folder.getFiles();
+  
+  copyFiles(files, currentFolder);
+  
+  Logger.log('\n'+name+' has ' + count+' files\n----------------------\n' );
+  var subs = folder.getFolders();
+  while (subs.hasNext()) {
+    
+    var subfolder = subs.next();
+    
+    var subsParents = subfolder.getParents();
+      
+        var thisFolder = subfolder.getName();
+        //if folder doesn't exist localy create it
+        if(!(currentFolder.getFoldersByName(thisFolder)).hasNext()){
+          currentFolder = currentFolder.createFolder(thisFolder);
+        }else{
+          var returnedFolders = currentFolder.getFoldersByName(thisFolder);
+          currentFolder = returnedFolders.next();
+        }
+           
+    
+    total+=traverseFolder(subfolder,count, currentFolder);
+  }
+  return total;
+}
+
+
+function copyFiles(files, currentFolder){
+           
+  var file, date, access, url, permission;
+  var privacy, view, viewers, edit, editors;
+  
+  while ( files.hasNext() ) {
+    
+    file = files.next();
+               
+    //copy file
+    var newId = (file.makeCopy(file.getName(), currentFolder)).getId();
+
+    //set permissions for new file
+    var newFile = DriveApp.getFileById(newId);
+       
+    try {
+      
+      access     = file.getSharingAccess();
+      permission = file.getSharingPermission();
+      viewers    = file.getViewers();      
+      editors    = file.getEditors();
+
+      
+      for (var v=0; v<viewers.length; v++) {
+        newFile.addViewer(viewers[v]);
+      }
+      
+      for (var ed=0; ed<editors.length; ed++) { 
+        newFile.addEditor(editors[ed]);
+      }
+      
+      
+    } catch (e) {Logger.log(e.toString()); Logger.log(file.getName());};
+       
+  }
+}
